@@ -60,10 +60,13 @@ def main(argv: list[str] | None = None) -> int:
     if "Error" in status or "Err" in status:
         print(
             "\nDevice returned an ERROR, not data. Common causes:\n"
-            "  Err 905 -> wrong IP / device unreachable on the LAN.\n"
-            "  Err 901/914 -> wrong local_key (re-run the tinytuya wizard; the "
-            "key changes if you re-pair the device in the app).\n"
-            "  decryption errors -> wrong protocol version.",
+            "  'Unable to Connect' / Err 901 -> cannot open a TCP socket to the "
+            "device: wrong IP, device offline, or not reachable from this host "
+            "(check the IP and that nothing blocks LAN port 6668).\n"
+            "  Err 905 -> device discovery/network issue on the LAN.\n"
+            "  Err 914 / decryption / key errors -> wrong local_key (re-run the "
+            "tinytuya wizard; the key changes if you re-pair the device).\n"
+            "  payload/decrypt errors -> wrong protocol version.",
             file=sys.stderr,
         )
 
