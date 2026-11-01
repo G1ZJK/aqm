@@ -1,0 +1,75 @@
+# Air Quality Monitor — container orchestration for Raspberry Pi 5 (ARM64).
+#
+# Usage:
+#   cp config.example.yaml config.yaml      # fill in device secrets
+#   cp .env.example .env                     # optional: tweak WEB_PORT
+#   docker compose up -d --build
+#
+# The three app services share one image (built once) and differ only by the
+# command they run. MongoDB runs as its own service with a persistent volume.
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    # Not published to the host: only the app services need it, over the
+    # internal compose network. Keeps MongoDB off the LAN.
+    expose:
+      - "27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  web:
+    build: .
+    image: air-quality-monitor:latest
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      AQM_CONFIG: /config/config.yaml
+      AQM_MONGO_URI: mongodb://mongo:27017
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+    # Host WEB_PORT (default 8080) -> container 8000. Change WEB_PORT in .env
+    # to avoid clashing with other apps (e.g. an existing service on 8000).
+    ports:
+      - "${WEB_PORT:-8080}:8000"
+    command: ["python", "-m", "aqm.web_main"]
+
+  poller:
+    build: .
+    image: air-quality-monitor:latest
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      AQM_CONFIG: /config/config.yaml
+      AQM_MONGO_URI: mongodb://mongo:27017
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+    command: ["python", "-m", "aqm.poller_main"]
+
+  rollup:
+    build: .
+    image: air-quality-monitor:latest
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      AQM_CONFIG: /config/config.yaml
+      AQM_MONGO_URI: mongodb://mongo:27017
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+    command: ["python", "-m", "aqm.rollup_main"]
+
+volumes:
+  mongo_data:

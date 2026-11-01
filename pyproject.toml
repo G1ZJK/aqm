@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "air-quality-monitor"
+version = "0.1.0"
+description = "LAN-only Raspberry Pi 5 air quality dashboard for the ZN-MT29 Tuya monitor"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aqm*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["B008"]  # FastAPI uses function calls in defaults (Depends/Query)

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/chart.umd.min.js" defer></script>
+  <script src="/static/dashboard.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>{{ title }}</h1>
+    <div id="status" class="status">connecting…</div>
+  </header>
+
+  <section id="alert-banner" class="alert-banner hidden" role="status" aria-live="polite"></section>
+
+  <main>
+    <section class="cards" aria-label="Live values">
+      {% for p in parameters %}
+      <article class="card" id="card-{{ p.key }}" data-key="{{ p.key }}">
+        <div class="card-label">{{ p.label }}</div>
+        <div class="card-value"><span class="value" id="val-{{ p.key }}">—</span>
+          <span class="unit">{{ p.unit }}</span></div>
+      </article>
+      {% endfor %}
+    </section>
+
+    <section class="chart-panel" aria-label="Historical trends">
+      <div class="controls">
+        <label>Parameter
+          <select id="chart-metric">
+            {% for p in parameters %}
+            <option value="{{ p.key }}">{{ p.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Bucket
+          <select id="chart-bucket">
+            {% for b in buckets %}
+            <option value="{{ b }}" {% if b == 'hourly' %}selected{% endif %}>{{ b }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Range
+          <select id="chart-range">
+            <option value="1">1 hour</option>
+            <option value="24" selected>24 hours</option>
+            <option value="168">7 days</option>
+            <option value="720">30 days</option>
+            <option value="8760">1 year</option>
+          </select>
+        </label>
+      </div>
+      <canvas id="trend-chart" height="120"></canvas>
+    </section>
+  </main>
+
+  <footer>
+    <small>LAN-only air quality dashboard · ZN-MT29 · data updates live via SSE</small>
+  </footer>
+</body>
+</html>

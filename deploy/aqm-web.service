@@ -1,0 +1,17 @@
+[Unit]
+Description=Air Quality Monitor - Web dashboard (FastAPI)
+After=network-online.target mongod.service
+Wants=network-online.target
+Requires=mongod.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/air_quality_monitor
+Environment=AQM_CONFIG=/opt/air_quality_monitor/config.yaml
+ExecStart=/opt/air_quality_monitor/.venv/bin/python -m aqm.web_main
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

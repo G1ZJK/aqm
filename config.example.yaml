@@ -1,0 +1,97 @@
+# Air Quality Monitor — example configuration.
+# Copy to config.yaml (git-ignored) and fill in your device secrets.
+#
+# How to obtain device_id + local_key for the ZN-MT29:
+#   1. Create a free account at https://iot.tuya.com and a Cloud project.
+#   2. Link your Tuya/Smart Life app account to the project.
+#   3. Run:  python -m tinytuya wizard
+#      It writes devices.json with device id + local key for every device.
+#   4. Find the ZN-MT29 and paste its values below. The device IP is on your
+#      router's client list, or run:  python -m tinytuya scan
+
+device:
+  device_id: "REPLACE_WITH_DEVICE_ID"
+  local_key: "REPLACE_WITH_LOCAL_KEY"
+  ip: "192.168.1.50"
+  version: 3.3                 # try 3.4 / 3.5 if 3.3 yields no data
+  poll_interval_seconds: 30
+  connection_timeout_seconds: 5
+  use_monitor_fallback: true
+
+  # Map device DPS ids -> canonical parameter keys.
+  # DISCOVER THESE with the discovery utility (see README / Task 3):
+  #   python -m aqm.discover
+  # The values below are a PLACEHOLDER guess and must be verified live.
+  dps_map:
+    "2": "pm25"
+    "18": "pm10"
+    "19": "pm1"
+    "20": "pm03"
+    "21": "co2"
+    "22": "co"
+    "23": "tvoc"
+    "24": "hcho"
+    "25": "temperature"
+    "26": "humidity"
+
+  # Optional per-parameter scaling applied to raw values.
+  # Many Tuya devices report temperature/humidity x10 as integers.
+  scaling:
+    temperature: 0.1
+    humidity: 1.0
+
+mongo:
+  uri: "mongodb://localhost:27017"
+  database: "air_quality"
+  raw_collection: "readings"
+  rollup_daily_collection: "rollup_daily"
+  rollup_weekly_collection: "rollup_weekly"
+  rollup_monthly_collection: "rollup_monthly"
+  alerts_collection: "alerts"
+  raw_retention_seconds: 2592000   # 30 days
+  server_selection_timeout_ms: 5000
+
+rollup:
+  enabled: true
+  interval_minutes: 60
+  backfill_days: 7
+
+aqi:
+  method: "us_epa"
+
+alerts:
+  enabled: true
+  thresholds:
+    pm25:
+      warn_high: 35.5        # US EPA: Moderate/Unhealthy-for-sensitive boundary
+      critical_high: 55.5
+      clear_margin: 2.0
+    pm10:
+      warn_high: 155
+      critical_high: 255
+      clear_margin: 5.0
+    co2:
+      warn_high: 1000        # ASHRAE comfort guidance
+      critical_high: 2000
+      clear_margin: 50
+    co:
+      warn_high: 9           # ppm, 8-hour exposure guidance
+      critical_high: 35
+      clear_margin: 1
+    hcho:
+      warn_high: 0.1         # mg/m3
+      critical_high: 0.3
+      clear_margin: 0.02
+    tvoc:
+      warn_high: 0.5         # mg/m3
+      critical_high: 1.0
+      clear_margin: 0.05
+    aqi:
+      warn_high: 100         # Moderate upper bound
+      critical_high: 150
+      clear_margin: 5
+
+web:
+  host: "0.0.0.0"
+  port: 8000
+  title: "Air Quality Monitor"

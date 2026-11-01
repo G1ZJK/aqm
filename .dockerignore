@@ -1,0 +1,33 @@
+# Keep the build context small and the image clean.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+
+# Tests and dev-only files aren't needed in the runtime image.
+tests/
+requirements-dev.txt
+
+# Local secrets / state must never be baked into the image.
+config.yaml
+*.local.yaml
+tinytuya.json
+devices.json
+snapshot.json
+
+# VCS / editor / OS
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+
+# Docs & deploy artifacts not needed at runtime
+README.md
+deploy/
