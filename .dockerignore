@@ -20,6 +20,9 @@ config.yaml
 tinytuya.json
 devices.json
 snapshot.json
+tuya-raw.json
+.env
+logs/
 
 # VCS / editor / OS
 .git/

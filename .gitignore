@@ -4,7 +4,11 @@ config.yaml
 tinytuya.json
 devices.json
 snapshot.json
+tuya-raw.json
 .env
+
+# Runtime logs
+logs/
 
 # Python
 __pycache__/

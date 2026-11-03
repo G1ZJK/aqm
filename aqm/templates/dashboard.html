@@ -39,7 +39,7 @@
         <label>Bucket
           <select id="chart-bucket">
             {% for b in buckets %}
-            <option value="{{ b }}" {% if b == 'hourly' %}selected{% endif %}>{{ b }}</option>
+            <option value="{{ b }}" {% if b == 'minute' %}selected{% endif %}>{{ b }}</option>
             {% endfor %}
           </select>
         </label>

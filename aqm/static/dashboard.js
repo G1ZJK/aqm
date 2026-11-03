@@ -62,6 +62,7 @@ function connectStream() {
 // --- Historical trend chart -----------------------------------------------
 
 let chart = null;
+const CHART_REFRESH_MS = 30000;
 
 function initChart() {
   const ctx = document.getElementById("trend-chart").getContext("2d");
@@ -139,4 +140,8 @@ window.addEventListener("DOMContentLoaded", () => {
   wireControls();
   loadChart();
   connectStream();
+  // Auto-refresh the trend chart every 30 seconds.
+  setInterval(() => {
+    loadChart().catch((e) => console.error("chart refresh failed", e));
+  }, CHART_REFRESH_MS);
 });
