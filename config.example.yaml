@@ -21,24 +21,26 @@ device:
   # Map device DPS ids -> canonical parameter keys.
   # DISCOVER THESE with the discovery utility (see README / Task 3):
   #   python -m aqm.discover
-  # The values below are a PLACEHOLDER guess and must be verified live.
+  # The values below are the verified ZN-MT29 (MT15/MT29) mapping.
   dps_map:
-    "2": "pm25"
-    "18": "pm10"
-    "19": "pm1"
-    "20": "pm03"
-    "21": "co2"
-    "22": "co"
-    "23": "tvoc"
-    "24": "hcho"
-    "25": "temperature"
-    "26": "humidity"
+    "2": "temperature"   # temp_current
+    "3": "humidity"      # humidity_value
+    "4": "co2"           # co2_value (ppm)
+    "5": "hcho"          # ch2o_value (raw x 0.001 = mg/m3)
+    "7": "pm25"          # pm25_value
+    "8": "pm1"           # pm1
+    "9": "pm10"          # pm10
+    "101": "tvoc"        # TVOC (raw x 0.001 = mg/m3); confirmed via DPS spike test
+    # NOTE: CO and PM0.3 DPS ids are not yet identified on this firmware.
+    # Re-run `python -m aqm.discover`, perturb one measure at a time, and map
+    # whichever datapoint responds. Until then those cards stay blank.
 
   # Optional per-parameter scaling applied to raw values.
-  # Many Tuya devices report temperature/humidity x10 as integers.
   scaling:
-    temperature: 0.1
+    temperature: 1.0
     humidity: 1.0
+    hcho: 0.001
+    tvoc: 0.001          # raw integer milli-units -> mg/m3 (e.g. 88 -> 0.088)
 
 mongo:
   uri: "mongodb://localhost:27017"
