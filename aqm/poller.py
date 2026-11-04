@@ -68,6 +68,7 @@ class Poller:
             raw_dps,
             self._config.device.dps_map,
             self._config.device.scaling,
+            aqi_method=self._config.aqi.method,
         )
         if not reading.values:
             logger.warning("No parameters resolved from DPS %r", raw_dps)

@@ -45,7 +45,7 @@ def test_example_config_is_valid():
     example = Path(__file__).resolve().parent.parent / "config.example.yaml"
     config = load_config(example)
     # Example documents all expected sections with sane defaults.
-    assert config.aqi.method == "us_epa"
+    assert config.aqi.method in ("us_epa", "china_mee")
     assert config.mongo.raw_retention_seconds > 0
     assert "pm25" in config.alerts.thresholds
 

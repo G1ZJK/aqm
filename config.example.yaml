@@ -59,7 +59,9 @@ rollup:
   backfill_days: 7
 
 aqi:
-  method: "us_epa"
+  # "us_epa" or "china_mee". The ZN-MT29 on-device display uses the China MEE
+  # scale, so china_mee makes the dashboard agree with the hardware.
+  method: "china_mee"
 
 alerts:
   enabled: true

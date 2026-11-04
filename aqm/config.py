@@ -162,8 +162,11 @@ class AQIConfig(BaseModel):
     @field_validator("method")
     @classmethod
     def _validate_method(cls, value: str) -> str:
-        if value != "us_epa":
-            raise ValueError("only 'us_epa' AQI method is currently supported")
+        valid = ("us_epa", "china_mee")
+        if value not in valid:
+            raise ValueError(
+                f"unsupported AQI method {value!r}; valid: {', '.join(valid)}"
+            )
         return value
 
 

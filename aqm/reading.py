@@ -43,17 +43,19 @@ def normalize(
     *,
     ts: datetime | None = None,
     compute_aqi: bool = True,
+    aqi_method: str = "us_epa",
 ) -> Reading:
     """Convert a raw DPS payload into a normalized :class:`Reading`.
 
     Steps: map DPS ids -> parameters, apply scaling, then (optionally) compute
-    the AQI from PM2.5/PM10 and add it as the ``aqi`` parameter.
+    the AQI from PM2.5/PM10 and add it as the ``aqi`` parameter. ``aqi_method``
+    selects the AQI standard (``us_epa`` or ``china_mee``).
     """
     mapped = map_dps_to_parameters(raw_dps, dps_map)
     scaled = apply_scaling(mapped, scaling or {})
 
     if compute_aqi:
-        aqi = aqi_from_pm(scaled.get("pm25"), scaled.get("pm10"))
+        aqi = aqi_from_pm(scaled.get("pm25"), scaled.get("pm10"), aqi_method)
         if aqi is not None:
             scaled["aqi"] = float(aqi)
 

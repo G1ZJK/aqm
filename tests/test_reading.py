@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
+
 from aqm.aqi import PM25_BREAKPOINTS, aqi_category, aqi_from_pm, sub_index
 from aqm.reading import apply_scaling, normalize
 
@@ -16,6 +18,27 @@ def test_aqi_pm25_boundary_values():
     assert aqi_from_pm(9.1, None) == 51
     assert aqi_from_pm(35.5, None) == 101
     assert aqi_from_pm(55.5, None) == 151
+
+
+def test_aqi_china_mee_differs_from_epa():
+    # PM2.5 = 13 ug/m3: EPA reports ~58 (Moderate), China MEE reports ~19
+    # (Excellent) because its first band spans 0-35 -> 0-50. This mirrors the
+    # ZN-MT29 on-device display.
+    assert aqi_from_pm(13.0, None, "us_epa") == 58
+    china = aqi_from_pm(13.0, None, "china_mee")
+    assert china == round(50 / 35 * 13)  # == 19
+    assert china < 25
+
+
+def test_aqi_china_mee_boundaries():
+    assert aqi_from_pm(0.0, None, "china_mee") == 0
+    assert aqi_from_pm(35.0, None, "china_mee") == 50
+    assert aqi_from_pm(75.0, None, "china_mee") == 100
+
+
+def test_aqi_unknown_method_raises():
+    with pytest.raises(ValueError):
+        aqi_from_pm(13.0, None, "bogus")
 
 
 def test_aqi_pm25_midrange_known_value():
