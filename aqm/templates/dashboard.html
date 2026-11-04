@@ -54,11 +54,13 @@
         </label>
       </div>
       <canvas id="trend-chart" height="120"></canvas>
+      <p id="chart-description" class="chart-description"></p>
     </section>
   </main>
 
   <footer>
     <small>LAN-only air quality dashboard · ZN-MT29 · data updates live via SSE</small>
   </footer>
+  <script id="parameters-data" type="application/json">{{ parameters | tojson }}</script>
 </body>
 </html>

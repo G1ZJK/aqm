@@ -86,3 +86,13 @@ main { padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
 }
 
 footer { padding: 1rem 1.5rem; color: var(--muted); text-align: center; }
+
+.chart-description {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted);
+  border-left: 3px solid var(--accent);
+  padding-left: 0.75rem;
+}
+.chart-description:empty { display: none; }

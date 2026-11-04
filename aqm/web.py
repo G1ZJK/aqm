@@ -27,6 +27,34 @@ _TEMPLATES = Jinja2Templates(directory=str(_BASE_DIR / "templates"))
 _STATIC_DIR = _BASE_DIR / "static"
 
 
+def _parameter_payload(config: AppConfig) -> list[dict]:
+    """Per-parameter metadata plus configured danger thresholds for the UI.
+
+    ``thresholds`` holds the warn/critical bounds (if any) for the parameter so
+    the dashboard can draw reference lines on charts. Absent directions are
+    omitted.
+    """
+    thresholds = config.alerts.thresholds
+    payload: list[dict] = []
+    for p in PARAMETERS:
+        entry = {
+            "key": p.key,
+            "label": p.label,
+            "unit": p.unit,
+            "description": p.description,
+            "thresholds": {},
+        }
+        level = thresholds.get(p.key)
+        if level is not None:
+            entry["thresholds"] = {
+                name: getattr(level, name)
+                for name in ("warn_high", "critical_high", "warn_low", "critical_low")
+                if getattr(level, name) is not None
+            }
+        payload.append(entry)
+    return payload
+
+
 def _parse_dt(value: str | None, default: datetime) -> datetime:
     if value is None:
         return default
@@ -93,7 +121,7 @@ def create_app(
 
     @app.get("/api/parameters")
     async def parameters() -> list[dict]:
-        return [{"key": p.key, "label": p.label, "unit": p.unit} for p in PARAMETERS]
+        return _parameter_payload(config)
 
     @app.get("/api/current")
     async def current(qs: QueryService = Depends(get_query)) -> dict:
@@ -153,9 +181,7 @@ def create_app(
             {
                 "request": request,
                 "title": config.web.title,
-                "parameters": [
-                    {"key": p.key, "label": p.label, "unit": p.unit} for p in PARAMETERS
-                ],
+                "parameters": _parameter_payload(config),
                 "buckets": list(ALL_BUCKETS),
             },
         )

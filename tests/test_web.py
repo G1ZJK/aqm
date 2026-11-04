@@ -74,6 +74,38 @@ def test_parameters_endpoint_lists_all(client):
     assert keys == set(ALL_KEYS)
 
 
+def test_parameters_include_descriptions_and_thresholds(client):
+    resp = client.get("/api/parameters")
+    by_key = {p["key"]: p for p in resp.json()}
+    # Every parameter carries a human-readable description.
+    assert all(p["description"] for p in by_key.values())
+    # pm25 has configured danger levels (from the test config defaults it is
+    # empty, so assert the field exists and is a mapping for the UI).
+    assert isinstance(by_key["pm25"]["thresholds"], dict)
+
+
+def test_parameters_expose_configured_thresholds():
+    from aqm.config import AlertsConfig, ThresholdLevel
+
+    cfg = AppConfig(
+        device=DeviceConfig(device_id="d", local_key="k", ip="192.168.1.5"),
+        alerts=AlertsConfig(
+            thresholds={
+                "pm25": ThresholdLevel(warn_high=35.5, critical_high=55.5)
+            }
+        ),
+    )
+    app = create_app(cfg, query_service=FakeQueryService(), alert_provider=lambda: [])
+    client = TestClient(app)
+    by_key = {p["key"]: p for p in client.get("/api/parameters").json()}
+    assert by_key["pm25"]["thresholds"] == {
+        "warn_high": 35.5,
+        "critical_high": 55.5,
+    }
+    # Dashboard embeds the metadata as JSON for the chart reference lines.
+    assert 'id="parameters-data"' in client.get("/").text
+
+
 def test_current(client):
     resp = client.get("/api/current")
     assert resp.status_code == 200

@@ -1,5 +1,29 @@
 "use strict";
 
+// --- Parameter metadata (descriptions + danger thresholds) -----------------
+// Injected server-side as JSON; keyed by parameter for quick lookup.
+
+const PARAMETERS = (() => {
+  const el = document.getElementById("parameters-data");
+  if (!el) return [];
+  try {
+    return JSON.parse(el.textContent) || [];
+  } catch (e) {
+    console.error("bad parameters payload", e);
+    return [];
+  }
+})();
+
+const PARAM_BY_KEY = Object.fromEntries(PARAMETERS.map((p) => [p.key, p]));
+
+// Colors for the danger reference lines drawn on the chart.
+const THRESHOLD_STYLES = {
+  warn_high: { color: "#d29922", label: "Warn" },
+  critical_high: { color: "#f85149", label: "Critical" },
+  warn_low: { color: "#d29922", label: "Warn (low)" },
+  critical_low: { color: "#f85149", label: "Critical (low)" },
+};
+
 // --- Live values + alerts via SSE -----------------------------------------
 
 const statusEl = document.getElementById("status");
@@ -10,17 +34,20 @@ function severityForParam(alerts, key) {
   return match ? match.severity : "ok";
 }
 
+function formatValue(v) {
+  // Guard against null/undefined/NaN/Infinity so one bad value can't abort
+  // the whole render loop (which previously left later cards stuck on "—").
+  if (typeof v !== "number" || !Number.isFinite(v)) return "—";
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
 function renderCards(reading, alerts) {
   const values = (reading && reading.values) || {};
   document.querySelectorAll(".card").forEach((card) => {
     const key = card.dataset.key;
     const valEl = document.getElementById("val-" + key);
-    if (key in values) {
-      const v = values[key];
-      valEl.textContent = Number.isInteger(v) ? v : v.toFixed(1);
-    } else {
-      valEl.textContent = "—";
-    }
+    if (!valEl) return;
+    valEl.textContent = key in values ? formatValue(values[key]) : "—";
     card.classList.remove("warn", "critical");
     const sev = severityForParam(alerts, key);
     if (sev === "warn" || sev === "critical") card.classList.add(sev);
@@ -64,6 +91,41 @@ function connectStream() {
 let chart = null;
 const CHART_REFRESH_MS = 30000;
 
+// Chart.js plugin: draws horizontal danger-level reference lines using the
+// thresholds stashed on chart.$thresholds by loadChart().
+const thresholdLinesPlugin = {
+  id: "thresholdLines",
+  afterDatasetsDraw(c) {
+    const thresholds = c.$thresholds;
+    if (!thresholds) return;
+    const yScale = c.scales.y;
+    const { left, right } = c.chartArea;
+    const ctx = c.ctx;
+    ctx.save();
+    for (const [name, value] of Object.entries(thresholds)) {
+      if (typeof value !== "number" || !Number.isFinite(value)) continue;
+      if (value < yScale.min || value > yScale.max) continue;
+      const style = THRESHOLD_STYLES[name];
+      if (!style) continue;
+      const y = yScale.getPixelForValue(value);
+      ctx.beginPath();
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = style.color;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = style.color;
+      ctx.font = "11px system-ui, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(`${style.label} (${value})`, right - 4, y - 2);
+    }
+    ctx.restore();
+  },
+};
+
 function initChart() {
   const ctx = document.getElementById("trend-chart").getContext("2d");
   chart = new Chart(ctx, {
@@ -78,13 +140,22 @@ function initChart() {
       },
       plugins: { legend: { labels: { color: "#e6edf3" } } },
     },
+    plugins: [thresholdLinesPlugin],
   });
+}
+
+function updateDescription(metric) {
+  const el = document.getElementById("chart-description");
+  if (!el) return;
+  const spec = PARAM_BY_KEY[metric];
+  el.textContent = spec && spec.description ? spec.description : "";
 }
 
 async function loadChart() {
   const metric = document.getElementById("chart-metric").value;
   const bucket = document.getElementById("chart-bucket").value;
   const hours = parseInt(document.getElementById("chart-range").value, 10);
+  updateDescription(metric);
   const to = new Date();
   const from = new Date(to.getTime() - hours * 3600 * 1000);
   const url = `/api/history?metric=${metric}&bucket=${bucket}` +
@@ -126,6 +197,9 @@ async function loadChart() {
       fill: false,
     },
   ];
+  // Danger-level reference lines for the selected metric (if configured).
+  const spec = PARAM_BY_KEY[metric];
+  chart.$thresholds = (spec && spec.thresholds) || {};
   chart.update();
 }
 
